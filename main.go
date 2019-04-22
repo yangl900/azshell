@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -83,6 +84,8 @@ func main() {
 		return
 	}
 
+	stdIn, stdOut, _ := term.StdStreams()
+
 	state, err := term.MakeRaw(os.Stdin.Fd())
 	if err != nil {
 		fmt.Println(err)
@@ -90,14 +93,14 @@ func main() {
 
 	defer term.RestoreTerminal(os.Stdin.Fd(), state)
 
-	go send(wsChan)
-	receive(wsChan)
+	go send(wsChan, stdIn)
+	receive(wsChan, stdOut)
 }
 
-func send(dest *ws.Channel) {
+func send(dest *ws.Channel, stdIn io.ReadCloser) {
 	buff := make([]byte, 1)
 	for {
-		len, err := os.Stdin.Read(buff)
+		len, err := stdIn.Read(buff)
 		if err != nil {
 			log.Println("Failed to read stdin: ", err.Error())
 			break
@@ -107,7 +110,7 @@ func send(dest *ws.Channel) {
 	}
 }
 
-func receive(src *ws.Channel) {
+func receive(src *ws.Channel, stdOut io.Writer) {
 	for {
 		buff, more := <-src.ReadChannel()
 		if !more {
@@ -115,7 +118,7 @@ func receive(src *ws.Channel) {
 			break
 		}
 
-		_, err := os.Stdout.Write(buff)
+		_, err := stdOut.Write(buff)
 		if err != nil {
 			log.Printf("Failed to write: %s", err.Error())
 			break
