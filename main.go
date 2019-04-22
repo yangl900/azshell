@@ -1,121 +1,124 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"github.com/docker/docker/pkg/term"
+
+	"github.com/manifoldco/promptui"
+	"github.com/yangl900/azshell/ws"
 )
 
 func main() {
-	uri, err := RequestCloudShell()
+	var tenantID string
+	flag.StringVar(&tenantID, "tenant", "", "Specify the tenant Id.")
+	flag.Parse()
+
+	token, err := acquireBootstrapToken()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	tenants, err := getTenants(token)
+	if err != nil {
+		fmt.Println(errors.New("Failed to list tenants: " + err.Error()))
+		return
+	}
+
+	if len(tenants) == 0 {
+		fmt.Println("No tenants found.")
+		return
+	}
+
+	if len(tenants) == 1 && tenantID == "" {
+		tenantID = tenants[0].TenantID
+	}
+
+	if len(tenants) > 1 && tenantID == "" {
+		options := []string{}
+
+		for _, t := range tenants {
+			options = append(options, fmt.Sprintf("%s (%s)", t.DisplayName, t.TenantID))
+		}
+
+		prompt := promptui.Select{
+			Label: "Select Tenant",
+			Items: options,
+		}
+
+		index, _, err := prompt.Run()
+		if err != nil {
+			fmt.Println("Specify the --tenant option since multiple tenant available.")
+			return
+		}
+
+		tenantID = tenants[index].TenantID
+	}
+
+	uri, err := RequestCloudShell(tenantID)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println(uri)
+	wsURI, err := RequestTerminal(tenantID, uri)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	// localPort := flag.Int("port", 8002, "Local listening port.")
+	wsConfig := ws.Config{
+		ConnectRetryWaitDuration: time.Second * 1,
+		SendReceiveBufferSize:    8192,
+		URL:                      wsURI,
+	}
 
-	// flag.Parse()
+	wsChan, err := ws.NewWebsocketChannel(wsConfig)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
-	// if !flag.Parsed() {
-	// 	log.Println("Flag not parsed.")
-	// 	flag.PrintDefaults()
-	// 	os.Exit(1)
-	// }
+	state, err := term.MakeRaw(os.Stdin.Fd())
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	// localServerHost := fmt.Sprintf("localhost:%d", *localPort)
+	defer term.RestoreTerminal(os.Stdin.Fd(), state)
 
-	// ln, err := net.Listen("tcp", localServerHost)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// log.Println("Port forwarding server up and listening on: ", localServerHost)
-
-	// for {
-	// 	conn, err := ln.Accept()
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-
-	// 	go handleConnection(conn)
-	// }
+	go send(wsChan)
+	receive(wsChan)
 }
 
-// func send(src net.Conn, dest *ws.Channel) {
-// 	defer src.Close()
-// 	buff := make([]byte, 8192)
-// 	for {
-// 		len, err := src.Read(buff)
-// 		if err != nil {
-// 			log.Println("[TCP] Failed to read socket: ", err.Error())
-// 			break
-// 		}
-// 		log.Printf("[TCP][Received] %d bytes.\n", len)
+func send(dest *ws.Channel) {
+	buff := make([]byte, 1)
+	for {
+		len, err := os.Stdin.Read(buff)
+		if err != nil {
+			log.Println("Failed to read stdin: ", err.Error())
+			break
+		}
 
-// 		dest.Send(buff[:len])
-// 		log.Printf("[WS] [Sent]     %d bytes.\n", len)
-// 		log.Printf("[WS] [Send] %s", string(buff[:len]))
-// 	}
-// }
+		dest.Send(buff[:len])
+	}
+}
 
-// func receive(src *ws.Channel, dest net.Conn) {
-// 	defer dest.Close()
+func receive(src *ws.Channel) {
+	for {
+		buff, more := <-src.ReadChannel()
+		if !more {
+			log.Printf("Bye.\r\n")
+			break
+		}
 
-// 	for {
-// 		buff, more := <-src.ReadChannel()
-// 		if !more {
-// 			log.Printf("[WS] [Closed]")
-// 			break
-// 		}
-
-// 		log.Printf("[WS] [Received] %d bytes.\n", len(buff))
-
-// 		n, err := dest.Write(buff)
-// 		if err != nil {
-// 			log.Printf("[TCP] Failed to write socket back: %s", err.Error())
-// 			break
-// 		}
-// 		log.Printf("[TCP] [Sent]    %d bytes.", n)
-// 		log.Printf("[TCP] [Send] %s", string(buff))
-// 	}
-// }
-
-// func handleConnection(c net.Conn) {
-// 	log.Println("Connection from : ", c.RemoteAddr())
-
-// 	resp, err := getSocketURI()
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	if resp.WebsocketURI == "" {
-// 		log.Printf("Failed to get websocket URI. Closing connection.")
-// 		c.Close()
-// 		return
-// 	}
-
-// 	fmt.Println("Socket URI: ", resp.WebsocketURI)
-// 	fmt.Println("Password", resp.Passowrd)
-
-// 	wsConfig := ws.Config{
-// 		ConnectRetryWaitDuration: time.Second * 1,
-// 		SendReceiveBufferSize:    8192,
-// 		URL: resp.WebsocketURI,
-// 	}
-
-// 	wsChan, err := ws.NewWebsocketChannel(wsConfig)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		return
-// 	}
-
-// 	log.Println("Connected to ", resp.WebsocketURI)
-// 	wsChan.Send([]byte(resp.Passowrd))
-
-// 	log.Println("Authenticated.")
-
-// 	// go routines to initiate bi-directional communication for local server with a
-// 	// remote server
-// 	go send(c, wsChan)
-// 	go receive(wsChan, c)
-// }
+		_, err := os.Stdout.Write(buff)
+		if err != nil {
+			log.Printf("Failed to write: %s", err.Error())
+			break
+		}
+	}
+}

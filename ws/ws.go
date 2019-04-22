@@ -96,8 +96,6 @@ func (c *Channel) connect() {
 		time.Sleep(c.config.ConnectRetryWaitDuration)
 	}
 
-	logger.Printf("Connected to %s", c.config.URL)
-
 	if c.conn != nil {
 		c.conn.Close()
 	}
@@ -110,7 +108,6 @@ func (c *Channel) setupReceiveChannel() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if _, ok := err.(*websocket.CloseError); ok {
-				logger.Printf("websocket connection closed: %v", err)
 			} else {
 				logger.Printf("failed to read message with error: %v. Close socket.", err)
 			}

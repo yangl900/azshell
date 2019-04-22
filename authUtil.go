@@ -18,7 +18,7 @@ import (
 const (
 	activeDirectoryEndpoint = "https://login.microsoftonline.com/"
 	armResource             = "https://management.core.windows.net/"
-	clientAppID             = "04b07795-8ddb-461a-bbee-02f9e1bf7b46"
+	clientAppID             = "aebc6443-996d-45c2-90f0-388ff96faa56"
 	commonTenant            = "common"
 )
 
