@@ -17,8 +17,24 @@ import (
 
 func main() {
 	var tenantID string
+	var reset, help bool
 	flag.StringVar(&tenantID, "tenant", "", "Specify the tenant Id.")
+	flag.BoolVar(&reset, "reset", false, "Reset the presisted tenant settings.")
+	flag.BoolVar(&help, "help", false, "Show the help text.")
 	flag.Parse()
+
+	if help {
+		flag.Usage()
+		return
+	}
+
+	if reset {
+		err := os.Remove(defaultSettingsPath())
+		if err != nil {
+			log.Printf("Failed to remove settings: %v", err)
+		}
+		return
+	}
 
 	token, err := acquireBootstrapToken()
 	if err != nil {
@@ -42,24 +58,30 @@ func main() {
 	}
 
 	if len(tenants) > 1 && tenantID == "" {
-		options := []string{}
+		s, err := readSettings()
+		if err != nil || s.ActiveTenant == "" {
+			options := []string{}
 
-		for _, t := range tenants {
-			options = append(options, fmt.Sprintf("%s (%s)", t.DisplayName, t.TenantID))
+			for _, t := range tenants {
+				options = append(options, fmt.Sprintf("%s (%s)", t.DisplayName, t.TenantID))
+			}
+
+			prompt := promptui.Select{
+				Label: "Select Tenant",
+				Items: options,
+			}
+
+			index, _, err := prompt.Run()
+			if err != nil {
+				fmt.Println("Specify the --tenant option since multiple tenant available.")
+				return
+			}
+
+			tenantID = tenants[index].TenantID
+			saveSettings(settings{ActiveTenant: tenantID})
+		} else {
+			tenantID = s.ActiveTenant
 		}
-
-		prompt := promptui.Select{
-			Label: "Select Tenant",
-			Items: options,
-		}
-
-		index, _, err := prompt.Run()
-		if err != nil {
-			fmt.Println("Specify the --tenant option since multiple tenant available.")
-			return
-		}
-
-		tenantID = tenants[index].TenantID
 	}
 
 	uri, err := RequestCloudShell(tenantID)
