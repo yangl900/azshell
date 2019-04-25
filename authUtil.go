@@ -46,7 +46,7 @@ func defaultTokenCachePath(tenant string) string {
 		log.Fatal(err)
 	}
 
-	return fmt.Sprintf("%s/.armclient/accessToken.%s.json", usr.HomeDir, strings.ToLower(tenant))
+	return fmt.Sprintf("%s/.azshell/accessToken.%s.json", usr.HomeDir, strings.ToLower(tenant))
 }
 
 func acquireTokenDeviceCodeFlow(oauthConfig adal.OAuthConfig,
