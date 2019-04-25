@@ -28,7 +28,7 @@ func defaultSettingsPath() string {
 		log.Fatal(err)
 	}
 
-	return fmt.Sprintf("%s/.armclient/settings.json", usr.HomeDir)
+	return fmt.Sprintf("%s/.azshell/settings.json", usr.HomeDir)
 }
 
 func setDefaultSettingsPath(path string) {
