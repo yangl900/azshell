@@ -46,4 +46,6 @@ This is an experimental / prototype project. There are a few things I have not h
 * `download` command is not implemented, but it is possible to implement. Same for upload.
 
 # Contributions and comments
-If you like the idea and like to contribute to make this a real tool, contributions are welcome! Any comments are welcome too. Feel free to open issues or post to Azure Cloud Shell [feedback](https://feedback.azure.com/forums/598699-azure-cloud-shell).
+If you like the idea and like to contribute to make this a real tool, contributions are welcome! Any comments are welcome too.
+
+If you'd like to see this become an official tool from Azure, feel free to open issues or post to Azure Cloud Shell [feedback](https://feedback.azure.com/forums/598699-azure-cloud-shell).
