@@ -27,6 +27,8 @@ curl -sL https://github.com/yangl900/azshell/releases/download/v0.1.0/azshell_ma
 # Usage
 Simply type `azshell` and you are good to go. You will be prompt for device login for the first time, and access token will be cached in `$HOME/.azshell`.
 
+![Demo](gif/azshell.gif)
+
 ## OS support
 In theory this should work on Linux, Mac and Windows. I have only tested Ubuntu and Windows.
 
