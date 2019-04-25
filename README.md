@@ -30,7 +30,7 @@ Simply type `azshell` and you are good to go. You will be prompt for device logi
 ![Demo](gif/azshell.gif)
 
 ## OS support
-In theory this should work on Linux, Mac and Windows. I have only tested Ubuntu and Windows.
+This should work on Linux, Mac and Windows.
 
 ## How to build
 Run `make` from the project root. Linux / Mac / Windows binaries will all be built.
