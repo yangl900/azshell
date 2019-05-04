@@ -10,18 +10,18 @@ azshell is just one binary, copy and use it.
 
 For Linux:
 ```bash
-curl -sL https://github.com/yangl900/azshell/releases/download/v0.1.0/azshell_linux_64-bit.tar.gz | tar xz
+curl -sL https://github.com/yangl900/azshell/releases/download/v0.2.0/azshell_linux_64-bit.tar.gz | tar xz
 ```
 
 For Windows (In PowerShell):
 ```powershell
-curl https://github.com/yangl900/azshell/releases/download/v0.1.0/azshell_windows_64-bit.zip -OutFile azshell_windows_64.zip
+curl https://github.com/yangl900/azshell/releases/download/v0.2.0/azshell_windows_64-bit.zip -OutFile azshell_windows_64.zip
 ```
 And unzip the file, the only binary needed is `azshell.exe`.
 
 For MacOS:
 ```bash
-curl -sL https://github.com/yangl900/azshell/releases/download/v0.1.0/azshell_macOS_64-bit.tar.gz | tar xz
+curl -sL https://github.com/yangl900/azshell/releases/download/v0.2.0/azshell_macOS_64-bit.tar.gz | tar xz
 ```
 
 # Usage
@@ -41,7 +41,6 @@ If your account happen to have access to multiple tenants (AAD Directory), you w
 ## Limitations
 This is an experimental / prototype project. There are a few things I have not handled:
 
-* The terminal size is hard coded. Cloud Shell has API support, but I have not implemented in this tool to sync the cloud shell terminal size to local terminal size.
 * Not all authentication is hooked up. For example Graph and KeyVault CLI won't get the automatic login.
 * `download` command is not implemented, but it is possible to implement. Same for upload.
 
