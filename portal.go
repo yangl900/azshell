@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/docker/docker/pkg/term"
 )
 
 var (
@@ -31,8 +34,12 @@ type consoleResponseProperties struct {
 	URI               string `json:"uri"`
 }
 
-type terminalResponse struct {
+// Terminal is the cloud shell terminal
+type Terminal struct {
 	SocketURI string `json:"socketUri"`
+	ID        string `json:"id"`
+	BaseURI   string
+	TenantID  string
 }
 
 // RequestCloudShell requests a cloud shell instance
@@ -83,15 +90,38 @@ func RequestCloudShell(tenantID string) (string, error) {
 	return resp.Properties.URI, nil
 }
 
+// Resize resizes a terminal
+func (t *Terminal) Resize(size *term.Winsize) error {
+	requestURI := fmt.Sprintf("%s/terminals/%s/size?cols=%d&rows=%d&version=2019-01-01", t.BaseURI, t.ID, size.Width, size.Height)
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", requestURI, bytes.NewReader([]byte("")))
+
+	token, err := acquireAuthToken(t.TenantID)
+	if err != nil {
+		return errors.New("Failed to acquire auth token: " + err.Error())
+	}
+
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	_, err = client.Do(req)
+	if err != nil {
+		return errors.New("Request failed: " + err.Error())
+	}
+
+	return nil
+}
+
 // RequestTerminal request a terminal in cloud shell instance
-func RequestTerminal(tenantID, URI string) (string, error) {
+func RequestTerminal(tenantID, URI string) (*Terminal, error) {
 	requestURI := URI + "/terminals?cols=120&rows=80&version=2019-01-01&shell=bash"
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", requestURI, bytes.NewReader([]byte("")))
 
 	token, err := acquireAuthToken(tenantID)
 	if err != nil {
-		return "", errors.New("Failed to acquire auth token: " + err.Error())
+		return nil, errors.New("Failed to acquire auth token: " + err.Error())
 	}
 
 	log.Printf("Connecting terminal...")
@@ -102,17 +132,17 @@ func RequestTerminal(tenantID, URI string) (string, error) {
 
 	response, err := client.Do(req)
 	if err != nil {
-		return "", errors.New("Request failed: " + err.Error())
+		return nil, errors.New("Request failed: " + err.Error())
 	}
 
 	defer response.Body.Close()
 	buf, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return "", errors.New("Request failed: " + err.Error())
+		return nil, errors.New("Request failed: " + err.Error())
 	}
 
-	resp := terminalResponse{}
-	json.Unmarshal(buf, &resp)
+	t := &Terminal{BaseURI: URI, TenantID: tenantID}
+	json.Unmarshal(buf, t)
 
-	return resp.SocketURI, nil
+	return t, nil
 }

@@ -89,7 +89,7 @@ func main() {
 		fmt.Println(err)
 	}
 
-	wsURI, err := RequestTerminal(tenantID, uri)
+	t, err := RequestTerminal(tenantID, uri)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -97,7 +97,7 @@ func main() {
 	wsConfig := ws.Config{
 		ConnectRetryWaitDuration: time.Second * 1,
 		SendReceiveBufferSize:    8192,
-		URL:                      wsURI,
+		URL: t.SocketURI,
 	}
 
 	wsChan, err := ws.NewWebsocketChannel(wsConfig)
@@ -113,10 +113,28 @@ func main() {
 		fmt.Println(err)
 	}
 
+	go monitorSize(t)
+
 	defer term.RestoreTerminal(os.Stdin.Fd(), state)
 
 	go send(wsChan, stdIn)
 	receive(wsChan, stdOut)
+}
+
+func monitorSize(t *Terminal) {
+	curSize := &term.Winsize{}
+	for {
+		size, err := term.GetWinsize(os.Stdin.Fd())
+
+		if err == nil {
+			if curSize.Height != size.Height || curSize.Width != size.Width {
+				curSize = size
+				t.Resize(curSize)
+			}
+		}
+
+		time.Sleep(time.Second * 1)
+	}
 }
 
 func send(dest *ws.Channel, stdIn io.ReadCloser) {
