@@ -84,14 +84,27 @@ func main() {
 		}
 	}
 
+	css, err := ReadCloudShellUserSettings(tenantID)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if css.Properties == nil || css.Properties.StorageProfile == nil {
+		fmt.Println("It seems you haven't setup your cloud shell account yet. Navigate to https://shell.azure.com to complete account setup.")
+		return
+	}
+
 	uri, err := RequestCloudShell(tenantID)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
-	t, err := RequestTerminal(tenantID, uri)
-	if err != nil {
-		fmt.Println(err)
+	t, err := RequestTerminal(tenantID, uri, css.Properties.PreferredShellType)
+	if err != nil || t.SocketURI == "" {
+		fmt.Println("Failed to connect to cloud shell terminal.", err)
+		return
 	}
 
 	wsConfig := ws.Config{

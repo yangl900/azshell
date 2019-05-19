@@ -15,6 +15,8 @@ import (
 
 var (
 	resourceURI = "https://management.azure.com/providers/Microsoft.Portal/consoles/default?api-version=2018-10-01"
+	settingsURI = "https://management.azure.com/providers/Microsoft.Portal/userSettings/cloudconsole?api-version=2018-10-01"
+	userAgent   = "github.com/yangl900/azshell"
 )
 
 type consoleRequest struct {
@@ -40,6 +42,56 @@ type Terminal struct {
 	ID        string `json:"id"`
 	BaseURI   string
 	TenantID  string
+}
+
+// CloudShellSettings is the cloud shell settings
+type CloudShellSettings struct {
+	Properties *CloudShellSettingProperties `json:"properties"`
+}
+
+// CloudShellSettingProperties is the properties of cloud shell setting
+type CloudShellSettingProperties struct {
+	PreferredLocation  string          `json:"preferredLoction"`
+	StorageProfile     *StorageProfile `json:"storageProfile"`
+	PreferredShellType string          `json:"preferredShellType"`
+}
+
+// StorageProfile is the user's storage profile
+type StorageProfile struct {
+	StorageAccountResourceID string `json:"storageAccountResourceId"`
+	FileShareName            string `json:"fileShareName"`
+	DiskSizeInGB             int    `json:"diskSizeInGB"`
+}
+
+// ReadCloudShellUserSettings read the user settings of cloud shell
+func ReadCloudShellUserSettings(tenantID string) (*CloudShellSettings, error) {
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", settingsURI, nil)
+
+	token, err := acquireAuthToken(tenantID)
+	if err != nil {
+		return nil, errors.New("Failed to acquire auth token: " + err.Error())
+	}
+
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", userAgent)
+
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, errors.New("Request failed. Failed to read user settings: " + err.Error())
+	}
+
+	defer response.Body.Close()
+	buf, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, errors.New("Request failed. Failed to read user settings: " + err.Error())
+	}
+
+	resp := CloudShellSettings{}
+	json.Unmarshal(buf, &resp)
+	return &resp, nil
 }
 
 // RequestCloudShell requests a cloud shell instance
@@ -68,6 +120,7 @@ func RequestCloudShell(tenantID string) (string, error) {
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", userAgent)
 
 	response, err := client.Do(req)
 	if err != nil {
@@ -104,6 +157,7 @@ func (t *Terminal) Resize(size *term.Winsize) error {
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", userAgent)
 
 	_, err = client.Do(req)
 	if err != nil {
@@ -114,8 +168,8 @@ func (t *Terminal) Resize(size *term.Winsize) error {
 }
 
 // RequestTerminal request a terminal in cloud shell instance
-func RequestTerminal(tenantID, URI string) (*Terminal, error) {
-	requestURI := URI + "/terminals?cols=120&rows=80&version=2019-01-01&shell=bash"
+func RequestTerminal(tenantID, URI, shellType string) (*Terminal, error) {
+	requestURI := URI + "/terminals?cols=120&rows=80&version=2019-01-01&shell=" + shellType
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", requestURI, bytes.NewReader([]byte("")))
 
@@ -124,11 +178,12 @@ func RequestTerminal(tenantID, URI string) (*Terminal, error) {
 		return nil, errors.New("Failed to acquire auth token: " + err.Error())
 	}
 
-	log.Printf("Connecting terminal...")
+	log.Printf("Connecting terminal (%s)...", shellType)
 
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", userAgent)
 
 	response, err := client.Do(req)
 	if err != nil {
