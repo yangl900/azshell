@@ -10,24 +10,37 @@ azshell is just one binary, copy and use it.
 
 For Linux:
 ```bash
-curl -sL https://github.com/yangl900/azshell/releases/download/v0.2.1/azshell_linux_64-bit.tar.gz | tar xz
+curl -sL https://github.com/yangl900/azshell/releases/download/v0.2.2/azshell_linux_64-bit.tar.gz | tar xz
 ```
 
 For Windows (In PowerShell):
 ```powershell
-curl https://github.com/yangl900/azshell/releases/download/v0.2.1/azshell_windows_64-bit.zip -OutFile azshell_windows_64.zip
+curl https://github.com/yangl900/azshell/releases/download/v0.2.2/azshell_windows_64-bit.zip -OutFile azshell_windows_64.zip
 ```
 And unzip the file, the only binary needed is `azshell.exe`.
 
 For MacOS:
 ```bash
-curl -sL https://github.com/yangl900/azshell/releases/download/v0.2.1/azshell_macOS_64-bit.tar.gz | tar xz
+curl -sL https://github.com/yangl900/azshell/releases/download/v0.2.2/azshell_macOS_64-bit.tar.gz | tar xz
 ```
 
 # Usage
 Simply type `azshell` and you are good to go. You will be prompt for device login for the first time, and access token will be cached in `$HOME/.azshell`.
 
 ![Demo](gif/azshell.gif)
+
+Reset the login status and selected tenant:
+```bash
+azshell --reset
+```
+
+Specify the shell to start:
+```bash
+azshell --shell bash
+```
+```bash
+azshell --shell pwsh
+```
 
 ## OS support
 This should work on Linux, Mac and Windows.
