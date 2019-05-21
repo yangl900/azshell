@@ -21,7 +21,7 @@ func main() {
 	flag.StringVar(&tenantID, "tenant", "", "Specify the tenant Id.")
 	flag.BoolVar(&reset, "reset", false, "Reset the presisted tenant settings.")
 	flag.BoolVar(&help, "help", false, "Show the help text.")
-	flag.StringVar(&shellType,"shelltype","","Force to request the specified shell type (bash|pwsh)")
+	flag.StringVar(&shellType, "shell", "", "Force to request the specified shell (bash|pwsh).")
 	flag.Parse()
 
 	if help {
@@ -102,10 +102,9 @@ func main() {
 		return
 	}
 
-	if ((shellType != "pwsh") && (shellType != "bash")) {
+	if shellType != "pwsh" && shellType != "bash" {
 		shellType = css.Properties.PreferredShellType
 	}
-
 
 	t, err := RequestTerminal(tenantID, uri, shellType)
 	if err != nil || t.SocketURI == "" {
