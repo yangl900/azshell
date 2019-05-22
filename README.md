@@ -19,6 +19,11 @@ curl https://github.com/yangl900/azshell/releases/download/v0.2.2/azshell_window
 ```
 And unzip the file, the only binary needed is `azshell.exe`.
 
+For Windows (Using [Chocolatey](https://chocolatey.org/packages/azshell) package manager)
+```batch
+choco install azshell
+```
+
 For MacOS:
 ```bash
 curl -sL https://github.com/yangl900/azshell/releases/download/v0.2.2/azshell_macOS_64-bit.tar.gz | tar xz
